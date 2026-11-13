@@ -245,7 +245,9 @@ function draw(){
 init();
 const EMISSIONS_URL='https://s4inex.github.io/EU-EMISSIONS/';
 const BUDGET_URL='https://s4inex.github.io/CZECH-ECONOMY/';
-const APPS=[{n:'Emise z dopravy v EU',c:'#2f9e44',p:'M5 21c0-10 6-16 16-16 0 10-6 16-16 16zM5 21l8-8',u:EMISSIONS_URL,cur:1},{n:'Státní rozpočet ČR',c:'#0b5fa5',p:'M3 7h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM3 7V5a2 2 0 0 1 2-2h12v4M16 14h.01',u:BUDGET_URL}];
+ const ENERGY_URL='https://s4inex.github.io/EU-ENERGY/';
+
+const APPS=[{n:'Emise z dopravy v EU',c:'#2f9e44',p:'M5 21c0-10 6-16 16-16 0 10-6 16-16 16zM5 21l8-8',u:EMISSIONS_URL,cur:1},{n:'Státní rozpočet ČR',c:'#0b5fa5',p:'M3 7h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM3 7V5a2 2 0 0 1 2-2h12v4M16 14h.01',u:BUDGET_URL},{n:'Energetika EU',c:'#e8590c',p:'M13 2 4 14h7l-1 8 9-12h-7z',u:ENERGY_URL}];
 $('appM').innerHTML=APPS.map(a=>(a.cur?'<a class="cur" aria-current="page">':a.u?`<a href="${a.u}" target="_blank" rel="noopener">`:'<a class="cur" title="Odkaz zatím není nastaven">')+`<i style="background:${a.c}"><svg viewBox="0 0 24 24"><path d="${a.p}"/></svg></i>${a.n}</a>`).join('');
 const tgM=o=>{$('appM').hidden=!o;$('appB').setAttribute('aria-expanded',o)};
 $('appB').onclick=e=>{e.stopPropagation();tgM($('appM').hidden)};
