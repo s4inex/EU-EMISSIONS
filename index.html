@@ -3,6 +3,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Emise z dopravy v EU podle druhu dopravy</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 <style>
 :root{--bg:#f4f6f9;--card:#fff;--tx:#18222e;--mu:#5b6a7b;--bd:#dfe4ea;--ac:#0b5fa5;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f141b;--card:#18202a;--tx:#e8edf3;--mu:#98a5b5;--bd:#2a3543;--ac:#5aa9e6;color-scheme:dark}}
@@ -36,9 +37,29 @@ th:first-child,td:first-child{text-align:left}
 th{color:var(--mu);font-weight:600;position:sticky;top:0;background:var(--card)}
 tbody tr{cursor:pointer}tbody tr:hover{background:var(--bg)}tr.sel{background:var(--bg);font-weight:600}
 .note{color:var(--mu);font-size:12.5px;margin-top:16px}
-</style></head><body><div class="w">
-<h1>Emise z dopravy v zemích EU</h1>
-<p class="sub">Skleníkové plyny podle druhu dopravy · odhad pro rok 2022 · klikněte na stát v grafu nebo v tabulce pro detail</p>
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:16px}.top .sub{margin:0}
+#tabs{margin-bottom:16px}
+.pane{display:none}body[data-v=ov] #p-ov,body[data-v=set] #p-set{display:block}
+.apps{position:relative;flex:none}
+#appB{width:40px;height:40px;border-radius:50%;background:transparent;border:0;color:var(--mu);padding:0;display:grid;place-items:center;cursor:pointer}
+#appB:hover,#appB[aria-expanded=true]{background:var(--card);color:var(--ac)}
+#appM{position:absolute;right:0;top:46px;z-index:40;width:300px;background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:12px;box-shadow:0 12px 32px rgba(16,24,40,.2);display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
+#appM[hidden]{display:none}
+#appM a{display:flex;flex-direction:column;align-items:center;gap:8px;padding:12px 4px;border-radius:12px;color:var(--tx);text-decoration:none;font-size:12px;text-align:center;line-height:1.25}
+#appM a:hover{background:var(--bg)}#appM a.cur{background:var(--bg);outline:1px solid var(--bd);cursor:default}
+#appM i{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;color:#fff}
+#appM i svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+@media(max-width:600px){#appM{position:fixed;left:10px;right:10px;top:calc(56px + env(safe-area-inset-top,0px));width:auto}}
+.set{max-width:440px}.don{display:flex;align-items:center;justify-content:center;gap:8px;margin:8px 0}
+.don input{width:100px;background:var(--bg);color:var(--tx);border:1px solid var(--bd);border-radius:6px;padding:8px;font:inherit;text-align:center}
+#qr{background:#fff;padding:4px;border-radius:10px;width:180px;margin:10px auto;color:#000;font-size:12px}#qr svg{display:block;width:100%;height:auto}
+button.bb{width:100%;background:var(--card);color:var(--tx);border:1px solid var(--bd);border-radius:8px;padding:10px;font:inherit;cursor:pointer}button.bb:hover{border-color:var(--ac);color:var(--ac)}
+</style></head><body data-v="ov"><div class="w">
+<div class="top"><div><h1>Emise z dopravy v zemích EU</h1>
+<p class="sub">Skleníkové plyny podle druhu dopravy · odhad pro rok 2022 · klikněte na stát v grafu nebo v tabulce pro detail</p></div>
+<div class="apps"><button id="appB" aria-label="Aplikace" aria-haspopup="true" aria-expanded="false" title="Aplikace"><svg viewBox="0 0 24 24" width="22" height="22" fill="none"><path d="M5 5h2v2H5zM11 5h2v2h-2zM17 5h2v2h-2zM5 11h2v2H5zM11 11h2v2h-2zM17 11h2v2h-2zM5 17h2v2H5zM11 17h2v2h-2zM17 17h2v2h-2z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></button><div id="appM" hidden></div></div></div>
+<nav id="tabs" class="seg"><button data-v="ov" class="on">Přehled</button><button data-v="set">Nastavení</button></nav>
+<div class="pane" id="p-ov">
 
 <div class="kpis" id="kpis"></div>
 
@@ -58,7 +79,12 @@ tbody tr{cursor:pointer}tbody tr:hover{background:var(--bg)}tr.sel{background:va
 <div class="card tw"><h2>Tabulka emisí (Mt CO₂e)</h2><table><thead id="th"></thead><tbody id="tb"></tbody></table></div>
 <div class="card tw"><h2>Přibližný počet aktivních dopravních prostředků</h2><table><thead id="th2"></thead><tbody id="tb2"></tbody></table></div>
 
-<p class="note"><b>Metodika a zdroje:</b> Hodnoty jsou zaokrouhlené odhady v Mt CO₂e vycházející z národních inventur skleníkových plynů (UNFCCC / EEA, přibližně rok 2022). Silniční doprava je do osobních aut, dodávek a kamionů s autobusy rozdělena podle typických národních podílů, nejde tedy o úřední rozpis. Vlaky zahrnují jen přímé emise ze spalovací (dieselové) trakce – emise elektrických vlaků vznikají v energetice. Mezinárodní letectví a námořní doprava jsou odlety, resp. palivo natankované v zemi. Pro přesná čísla použijte přímo data EEA nebo Eurostatu. <b>Počty prostředků</b> jsou hrubé odhady (řádově kolem roku 2022): u osobních aut a dodávek vycházejí z registrů vozidel (ACEA/Eurostat), u ostatních kategorií jde jen o orientační řád. Kolejová vozidla zahrnují dieselové lokomotivy a motorové jednotky, letadla jsou komerční stroje registrovaných dopravců a námořní lodě jsou plavidla pod vlajkou daného státu (u Malty, Kypru nebo Řecka tak výrazně přesahují domácí provoz).</p>
+<p class="note"><b>Metodika a zdroje:</b> Hodnoty jsou zaokrouhlené odhady v Mt CO₂e vycházející z národních inventur skleníkových plynů (UNFCCC / EEA, přibližně rok 2022). Silniční doprava je do osobních aut, dodávek a kamionů s autobusy rozdělena podle typických národních podílů, nejde tedy o úřední rozpis. Vlaky zahrnují jen přímé emise ze spalovací (dieselové) trakce – emise elektrických vlaků vznikají v energetice. Mezinárodní letectví a námořní doprava jsou odlety, resp. palivo natankované v zemi. Pro přesná čísla použijte přímo data EEA nebo Eurostatu. <b>Počty prostředků</b> jsou hrubé odhady (řádově kolem roku 2022): u osobních aut a dodávek vycházejí z registrů vozidel (ACEA/Eurostat), u ostatních kategorií jde jen o orientační řád. Kolejová vozidla zahrnují dieselové lokomotivy a motorové jednotky, letadla jsou komerční stroje registrovaných dopravců a námořní lodě jsou plavidla pod vlajkou daného státu (u Malty, Kypru nebo Řecka tak výrazně přesahují domácí provoz).</p></div>
+<div class="pane" id="p-set"><div class="card set"><h2>Podpořit projekt</h2>
+<p class="note" style="margin-top:0">Web vzniká ve volném čase. Dobrovolný dar bez protiplnění můžete poslat na účet:</p>
+<div class="don"><label for="donAmt">Částka (Kč)</label><input type="number" id="donAmt" value="20" min="1" step="1"></div>
+<div id="qr"></div>
+<button class="bb" id="bCopy">275030807/0300 – kopírovat</button></div></div>
 </div>
 <script>
 const M=[
@@ -155,4 +181,17 @@ function draw(){
  $('tb2').onclick=$('tb').onclick;
 }
 init();
+const BUDGET_URL='';
+const APPS=[{n:'Emise z dopravy v EU',c:'#2f9e44',p:'M5 21c0-10 6-16 16-16 0 10-6 16-16 16zM5 21l8-8',cur:1},{n:'Státní rozpočet ČR',c:'#0b5fa5',p:'M3 7h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM3 7V5a2 2 0 0 1 2-2h12v4M16 14h.01',u:BUDGET_URL}];
+$('appM').innerHTML=APPS.map(a=>(a.cur?'<a class="cur" aria-current="page">':a.u?`<a href="${a.u}" target="_blank" rel="noopener">`:'<a class="cur" title="Odkaz zatím není nastaven">')+`<i style="background:${a.c}"><svg viewBox="0 0 24 24"><path d="${a.p}"/></svg></i>${a.n}</a>`).join('');
+const tgM=o=>{$('appM').hidden=!o;$('appB').setAttribute('aria-expanded',o)};
+$('appB').onclick=e=>{e.stopPropagation();tgM($('appM').hidden)};
+document.addEventListener('click',e=>{if(!$('appM').contains(e.target))tgM(false)});
+addEventListener('keydown',e=>{if(e.key==='Escape')tgM(false)});
+document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>{document.body.dataset.v=b.dataset.v;document.querySelectorAll('#tabs button').forEach(x=>x.classList.toggle('on',x===b))});
+const ACC='275030807',BANK='0300',BB=BANK+'000000'+ACC.padStart(10,'0'),IBAN='CZ'+String(98n-BigInt(BB+'123500')%97n).padStart(2,'0')+BB;
+const upQ=()=>{const a=Math.max(1,+$('donAmt').value||1).toFixed(2),spd=`SPD*1.0*ACC:${IBAN}*AM:${a}*CC:CZK*MSG:DOBROVOLNY DAR`;
+try{const q=qrcode(0,'M');q.addData(spd);q.make();$('qr').innerHTML=q.createSvgTag({cellSize:4,margin:4,scalable:true})}catch(e){$('qr').textContent='QR kód se nepodařilo vytvořit'}};
+$('donAmt').oninput=upQ;upQ();
+$('bCopy').onclick=()=>{const t=ACC+'/'+BANK;(navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>$('bCopy').textContent='Zkopírováno ✓').catch(()=>$('bCopy').textContent=t)};
 </script></body></html>
