@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="cs"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Emise z dopravy v EU podle druhu dopravy</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{--bg:#f4f6f9;--card:#fff;--tx:#18222e;--mu:#5b6a7b;--bd:#dfe4ea;--ac:#0b5fa5;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f141b;--card:#18202a;--tx:#e8edf3;--mu:#98a5b5;--bd:#2a3543;--ac:#5aa9e6;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0f141b;--card:#18202a;--tx:#e8edf3;--mu:#98a5b5;--bd:#2a3543;--ac:#5aa9e6;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.w{max-width:1200px;margin:0 auto;padding:24px 16px 40px}
+h1{font-size:26px;margin:0 0 4px}h2{font-size:16px;margin:0 0 12px}
+.sub{color:var(--mu);margin:0 0 20px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:16px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:16px}
+.kpi b{display:block;font-size:26px;line-height:1.2}.kpi span{color:var(--mu);font-size:13px}
+.ctl{display:flex;flex-wrap:wrap;gap:16px;align-items:center;margin-bottom:16px}
+.seg{display:inline-flex;border:1px solid var(--bd);border-radius:8px;overflow:hidden}
+.seg button{border:0;background:var(--card);color:var(--tx);padding:7px 12px;cursor:pointer;font:inherit;font-size:14px}
+.seg button.on{background:var(--ac);color:#fff}
+select{background:var(--card);color:var(--tx);border:1px solid var(--bd);border-radius:8px;padding:7px 10px;font:inherit;font-size:14px}
+label.ck{font-size:14px;display:flex;gap:6px;align-items:center;cursor:pointer}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+.chip{display:flex;align-items:center;gap:7px;border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:20px;padding:5px 12px;cursor:pointer;font:inherit;font-size:13px}
+.chip i{width:11px;height:11px;border-radius:3px;display:inline-block}
+.chip.off{opacity:.4;text-decoration:line-through}
+.grid{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:16px;align-items:start}
+@media(max-width:860px){.grid{grid-template-columns:1fr}}
+.cv{position:relative}
+.tw{overflow-x:auto;margin-top:16px}
+table{border-collapse:collapse;width:100%;font-size:13px;min-width:760px}
+th,td{padding:6px 8px;text-align:right;border-bottom:1px solid var(--bd);white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+th{color:var(--mu);font-weight:600;position:sticky;top:0;background:var(--card)}
+tbody tr{cursor:pointer}tbody tr:hover{background:var(--bg)}tr.sel{background:var(--bg);font-weight:600}
+.note{color:var(--mu);font-size:12.5px;margin-top:16px}
+</style></head><body><div class="w">
+<h1>Emise z dopravy v zemích EU</h1>
+<p class="sub">Skleníkové plyny podle druhu dopravy · odhad pro rok 2022 · klikněte na stát v grafu nebo v tabulce pro detail</p>
+
+<div class="kpis" id="kpis"></div>
+
+<div class="card ctl">
+ <div class="seg" id="metric"></div>
+ <label>Řazení: <select id="sort"><option value="tot">podle emisí</option><option value="name">abecedně</option></select></label>
+ <span style="color:var(--mu);font-size:13px">Druhy dopravy zapínáte a vypínáte kliknutím níže (mezinárodní letectví a námořní doprava jsou ve výchozím stavu vypnuté).</span>
+ <label>Detail: <select id="sel"></select></label>
+</div>
+<div class="chips" id="chips"></div>
+
+<div class="grid">
+ <div class="card"><h2 id="t1"></h2><div class="cv" id="cv1"><canvas id="c1"></canvas></div></div>
+ <div class="card"><h2 id="t2"></h2><div class="cv" style="height:340px"><canvas id="c2"></canvas></div><div id="legend2" style="margin-top:12px;font-size:13px"></div></div>
+</div>
+
+<div class="card tw"><h2>Tabulka emisí (Mt CO₂e)</h2><table><thead id="th"></thead><tbody id="tb"></tbody></table></div>
+<div class="card tw"><h2>Přibližný počet aktivních dopravních prostředků</h2><table><thead id="th2"></thead><tbody id="tb2"></tbody></table></div>
+
+<p class="note"><b>Metodika a zdroje:</b> Hodnoty jsou zaokrouhlené odhady v Mt CO₂e vycházející z národních inventur skleníkových plynů (UNFCCC / EEA, přibližně rok 2022). Silniční doprava je do osobních aut, dodávek a kamionů s autobusy rozdělena podle typických národních podílů, nejde tedy o úřední rozpis. Vlaky zahrnují jen přímé emise ze spalovací (dieselové) trakce – emise elektrických vlaků vznikají v energetice. Mezinárodní letectví a námořní doprava jsou odlety, resp. palivo natankované v zemi. Pro přesná čísla použijte přímo data EEA nebo Eurostatu. <b>Počty prostředků</b> jsou hrubé odhady (řádově kolem roku 2022): u osobních aut a dodávek vycházejí z registrů vozidel (ACEA/Eurostat), u ostatních kategorií jde jen o orientační řád. Kolejová vozidla zahrnují dieselové lokomotivy a motorové jednotky, letadla jsou komerční stroje registrovaných dopravců a námořní lodě jsou plavidla pod vlajkou daného státu (u Malty, Kypru nebo Řecka tak výrazně přesahují domácí provoz).</p>
+</div>
+<script>
+const M=[
+{k:'cars',n:'Osobní auta',c:'#2a7de1'},
+{k:'vans',n:'Dodávky (lehká nákladní)',c:'#17a2b8'},
+{k:'hdv',n:'Kamiony a autobusy',c:'#e8590c'},
+{k:'rail',n:'Vlaky (dieselová trakce)',c:'#2f9e44'},
+{k:'nav',n:'Vnitrostátní vodní doprava',c:'#7048e8'},
+{k:'avD',n:'Vnitrostátní letecká',c:'#f59f00'},
+{k:'avI',n:'Mezinárodní letecká',c:'#d6336c',intl:1},
+{k:'marI',n:'Mezinárodní námořní',c:'#364fc7',intl:1}];
+// název, populace (mil.), silnice celkem, podíl kamionů, vlaky, vodní, let. domácí, let. mezinár., námořní mezinár.
+const D=[
+['Německo',83.2,148,.24,1.2,.9,1,26,6],['Francie',68,117,.22,.6,.9,2.5,22,5],['Itálie',59,100,.25,.4,2,1.8,12,11],
+['Španělsko',47.5,86,.28,.2,1.8,3.2,19,16],['Polsko',37,60,.30,.5,.2,.1,3.5,2],['Nizozemsko',17.6,28,.22,.1,2,0,13,22],
+['Belgie',11.6,25,.25,.1,.3,0,3.5,8],['Švédsko',10.5,16,.24,.05,.9,.7,3.5,2],['Česko',10.5,19,.27,.25,0,0,1,0],
+['Rumunsko',19,19,.30,.3,.1,.2,1.5,.5],['Rakousko',9,21,.22,.1,0,0,3,0],['Portugalsko',10.4,17,.27,.1,.2,.6,4.5,2],
+['Řecko',10.4,15,.20,0,1.5,1.2,4.5,12],['Maďarsko',9.7,15,.30,.2,0,0,1.5,0],['Irsko',5.1,11,.20,.1,.05,.05,6,1],
+['Dánsko',5.9,11,.22,.1,.6,.1,3,5],['Finsko',5.6,11,.25,.1,.6,.5,2,1.5],['Bulharsko',6.5,9,.30,.1,.05,0,.8,.5],
+['Slovensko',5.4,7,.30,.1,0,0,.3,0],['Chorvatsko',3.9,6,.27,.05,.4,.1,.5,.5],['Litva',2.8,6,.35,.1,.05,0,.3,.5],
+['Slovinsko',2.1,4.5,.30,.05,0,0,.1,.1],['Lucembursko',.65,5,.15,0,0,0,1.2,0],['Lotyšsko',1.9,3.5,.27,.1,.05,0,.6,.3],
+['Estonsko',1.35,2.5,.25,.05,.1,0,.2,.4],['Kypr',.9,2.5,.10,0,.05,0,1,2],['Malta',.52,.7,.10,0,.05,0,.3,2.5]];
+const R=D.map(d=>({name:d[0],pop:d[1],cars:d[2]*(1-d[3]-.12),vans:d[2]*.12,hdv:d[2]*d[3],rail:d[4],nav:d[5],avD:d[6],avI:d[7],marI:d[8]}));
+// počty prostředků (tis. ks): osobní auta, dodávky, kamiony+autobusy, dieselové kolejová vozidla, vodní plavidla, komerční letadla dopravců, námořní lodě pod vlajkou
+const V=[[48500,3400,900,3,2.5,.9,.5],[38400,6300,700,1.5,1.8,.8,.4],[40200,4400,800,1.2,1.5,.4,1.3],[25000,3000,900,.8,1.2,.6,.25],[27000,3000,1000,2,.5,.18,.1],[8900,1100,200,.3,6,.35,1.2],[5800,900,200,.2,1.2,.09,.15],[4900,600,150,.5,.7,.13,.3],[5600,500,250,1.2,.15,.04,0],[8100,600,300,1.5,.7,.06,.04],[5100,450,150,.4,.1,.1,0],[5700,1000,200,.2,.3,.15,.1],[5600,900,400,.1,1.3,.1,1.4],[4000,500,200,.8,.25,.07,0],[2200,400,100,.1,.15,.7,.02],[2700,500,100,.3,.5,.12,.7],[2800,400,120,.3,.4,.09,.2],[3100,300,150,.4,.2,.03,.1],[2700,200,100,.5,.06,.015,0],[1900,100,100,.2,.4,.02,.2],[1500,150,150,.2,.08,.03,.03],[1300,100,80,.1,.02,.005,.005],[450,50,20,.05,.03,.04,.05],[800,100,60,.15,.06,.05,.02],[700,100,50,.1,.1,.02,.05],[600,100,40,0,.04,.015,1],[400,40,10,0,.08,.15,2.1]];
+R.forEach((r,i)=>{[r.vc,r.vv,r.vh,r.vr,r.vn,r.va,r.vm]=V[i]});
+const VK={cars:'vc',vans:'vv',hdv:'vh',rail:'vr',nav:'vn',avD:'va',avI:'va',marI:'vm'};
+const FL=[['vc','Osobní auta'],['vv','Dodávky'],['vh','Kamiony a autobusy'],['vr','Kolejová vozidla (diesel)'],['vn','Vodní plavidla'],['va','Letadla dopravců'],['vm','Námořní lodě (vlajka)']];
+const fc=x=>x>=1000?fmt(x/1000,1)+' mil.':x>=1?fmt(x,0)+' tis.':x>0?fmt(x*1000,0)+' ks':'–';
+const EU={name:'EU-27 celkem',pop:R.reduce((a,r)=>a+r.pop,0)};M.forEach(m=>EU[m.k]=R.reduce((a,r)=>a+r[m.k],0));FL.forEach(f=>EU[f[0]]=R.reduce((a,r)=>a+r[f[0]],0));
+const S={metric:'abs',sort:'tot',sel:-1,hid:new Set(['avI','marI'])};
+const fmt=(x,d=1)=>x.toLocaleString('cs',{maximumFractionDigits:d,minimumFractionDigits:x<10?d:0});
+const vis=m=>!S.hid.has(m.k);
+const tot=r=>M.reduce((a,m)=>a+(vis(m)?r[m.k]:0),0);
+const $=id=>document.getElementById(id);
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const MET={abs:['Absolutní (Mt CO₂e)','Mt CO₂e'],pc:['Na obyvatele (t CO₂e)','t CO₂e / obyvatele'],pct:['Podíl druhů dopravy (%)','%']};
+let c1,c2,order=[];
+
+function init(){
+ $('metric').innerHTML=Object.keys(MET).map(k=>`<button data-k="${k}">${MET[k][0]}</button>`).join('');
+ $('metric').onclick=e=>{if(e.target.dataset.k){S.metric=e.target.dataset.k;draw()}};
+ $('chips').innerHTML=M.map(m=>`<button class="chip" data-k="${m.k}"><i style="background:${m.c}"></i>${m.n}</button>`).join('');
+ $('chips').onclick=e=>{const b=e.target.closest('.chip');if(!b)return;const k=b.dataset.k;S.hid.has(k)?S.hid.delete(k):S.hid.add(k);draw()};
+ $('sort').onchange=e=>{S.sort=e.target.value;draw()};
+ 
+ $('sel').innerHTML='<option value="-1">EU-27 celkem</option>'+R.map((r,i)=>`<option value="${i}">${r.name}</option>`).join('');
+ $('sel').onchange=e=>{S.sel=+e.target.value;draw()};
+ matchMedia('(prefers-color-scheme:dark)').addEventListener('change',()=>draw());
+ draw();
+}
+function val(r,m){
+ if(!vis(m))return 0;const v=r[m.k];
+ if(S.metric==='abs')return v;if(S.metric==='pc')return v/r.pop;
+ const t=tot(r);return t?v/t*100:0;
+}
+function draw(){
+ [...$('metric').children].forEach(b=>b.classList.toggle('on',b.dataset.k===S.metric));
+ [...$('chips').children].forEach(b=>b.classList.toggle('off',S.hid.has(b.dataset.k)));
+ $('sel').value=S.sel;
+ order=R.map((r,i)=>i);
+ order.sort((a,b)=>S.sort==='name'?R[a].name.localeCompare(R[b].name,'cs'):(S.metric==='pct'?tot(R[b])-tot(R[a]):(S.metric==='pc'?tot(R[b])/R[b].pop-tot(R[a])/R[a].pop:tot(R[b])-tot(R[a]))));
+ const cur=S.sel<0?EU:R[S.sel],T=tot(cur);
+ const top=M.filter(vis).sort((a,b)=>cur[b.k]-cur[a.k])[0];
+ $('kpis').innerHTML=`<div class="card kpi"><span>${cur.name} – emise celkem</span><b>${fmt(T)} Mt CO₂e</b></div>
+ <div class="card kpi"><span>Na obyvatele</span><b>${fmt(T/cur.pop)} t CO₂e</b></div>
+ <div class="card kpi"><span>Největší zdroj</span><b>${top?top.n:'–'}</b></div>
+ <div class="card kpi"><span>Podíl největšího zdroje</span><b>${top&&T?fmt(cur[top.k]/T*100,0):0} %</b></div>`;
+ const tc=css('--tx'),mu=css('--mu'),bd=css('--bd');
+ Chart.defaults.color=mu;Chart.defaults.font.family='system-ui,sans-serif';
+ $('t1').textContent='Emise podle států a druhu dopravy – '+MET[S.metric][0];
+ $('cv1').style.height=(order.length*24+70)+'px';
+ const ds=M.filter(m=>vis(m)).map(m=>({label:m.n,data:order.map(i=>val(R[i],m)),backgroundColor:m.c,borderWidth:0}));
+ if(c1)c1.destroy();
+ c1=new Chart($('c1'),{type:'bar',data:{labels:order.map(i=>R[i].name),datasets:ds},options:{
+  indexAxis:'y',responsive:true,maintainAspectRatio:false,animation:{duration:300},
+  onClick:(e,el)=>{if(el.length){S.sel=order[el[0].index];draw()}},
+  scales:{x:{stacked:true,grid:{color:bd},title:{display:true,text:MET[S.metric][1]},max:S.metric==='pct'?100:undefined},y:{stacked:true,grid:{display:false},ticks:{color:tc,font:{weight:ctx=>order[ctx.index]===S.sel?'700':'400'}}}},
+  plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${fmt(c.parsed.x,2)} ${S.metric==='pct'?'%':S.metric==='pc'?'t/obyv.':'Mt'}`}}}}});
+ $('t2').textContent='Struktura emisí – '+cur.name;
+ const md=M.filter(m=>vis(m)&&cur[m.k]>0);
+ if(c2)c2.destroy();
+ c2=new Chart($('c2'),{type:'doughnut',data:{labels:md.map(m=>m.n),datasets:[{data:md.map(m=>cur[m.k]),backgroundColor:md.map(m=>m.c),borderColor:css('--card'),borderWidth:2}]},
+  options:{responsive:true,maintainAspectRatio:false,cutout:'58%',plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>` ${c.label}: ${fmt(c.parsed,2)} Mt (${fmt(c.parsed/T*100,0)} %)`}}}}});
+ $('legend2').innerHTML=md.map(m=>{const n=cur[VK[m.k]],pv=(n>0&&!['avD','avI','marI'].includes(m.k))?` · ${fmt(cur[m.k]*1000/n,1)} t/ks/rok`:'';return `<div style="padding:5px 0;border-bottom:1px solid var(--bd)"><div style="display:flex;justify-content:space-between;gap:8px"><span><i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:${m.c};margin-right:6px"></i>${m.n}</span><b>${fmt(cur[m.k]/T*100,0)} %</b></div><div style="color:var(--mu);font-size:12px;margin-left:16px">Počet: ≈ ${fc(n)}${pv}</div></div>`}).join('')+'<div style="color:var(--mu);font-size:12px;margin-top:8px">Letecká doprava (domácí i mezinárodní) sdílí stejnou flotilu letadel. Emise na kus platí pro pozemní dopravu a vodní plavidla.</div>';
+ const cols=M.filter(vis);
+ $('th').innerHTML='<tr><th>Stát</th>'+cols.map(m=>`<th>${m.n.replace(' (','<br>(')}</th>`).join('')+'<th>Celkem</th><th>t / obyv.</th></tr>';
+ const row=(r,i)=>`<tr data-i="${i}" class="${i===S.sel?'sel':''}"><td>${r.name}</td>${cols.map(m=>`<td>${fmt(r[m.k],2)}</td>`).join('')}<td>${fmt(tot(r))}</td><td>${fmt(tot(r)/r.pop,2)}</td></tr>`;
+ $('tb').innerHTML=row(EU,-1)+order.map(i=>row(R[i],i)).join('');
+ $('tb').onclick=e=>{const tr=e.target.closest('tr');if(tr){S.sel=+tr.dataset.i;draw();scrollTo({top:0,behavior:'smooth'})}};
+ $('th2').innerHTML='<tr><th>Stát</th>'+FL.map(f=>`<th>${f[1]}</th>`).join('')+'<th>Aut / 1000 obyv.</th></tr>';
+ const row2=(r,i)=>`<tr data-i="${i}" class="${i===S.sel?'sel':''}"><td>${r.name}</td>${FL.map(f=>`<td>${fc(r[f[0]])}</td>`).join('')}<td>${fmt(r.vc/r.pop,0)}</td></tr>`;
+ $('tb2').innerHTML=row2(EU,-1)+order.map(i=>row2(R[i],i)).join('');
+ $('tb2').onclick=$('tb').onclick;
+}
+init();
+</script></body></html>
